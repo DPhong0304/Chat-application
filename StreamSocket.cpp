@@ -1,9 +1,7 @@
-#include "socket.h"
+#include "StreamSocket.h"
 
-Socket::Socket(int domain)
-
-Socket::Socket(int Cdomain)
-: domain{Cdomain}
+StreamSocket::StreamSocket()
 {
-    socket
+    this->fd = socket(AF_INET, SOCK_STREAM, 0);
+    
 }

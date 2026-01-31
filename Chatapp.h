@@ -1,20 +1,21 @@
 #pragma once
 #include <string>
 #include <vector>
-#include "StreamSocket.h"
-
-// typedef void (*Operation)(vector<std::string> arguments);
+#include <map>
+#include <iostream>
+// #include "StreamSocket.h"
 
 class Chatapp {
 private:
-    StreamSocket listenSocket;     
-    std::vector<StreamSocket> connectionList;
-    // map<std::string, Operation> cmdHandler;
+    // StreamSocket listenSocket;     
+    // std::vector<StreamSocket> connectionList;
+    // char hostip[INET_ADDRSTRLEN];
+    int port;
+    Chatapp();
 
 public:
-    Chatapp();
-    Chatapp(int& port);  
-    void run(); 
+    Chatapp(const int& argc, char* argv[]);  
+    void cmdInterface(); 
     void help();
     void myip();
     void myport();
@@ -23,5 +24,5 @@ public:
     void terminate(int connectionID);
     void send(int connectionID, const std::string& message);
     void exit();
-    ~Chatapp();
+    ~Chatapp() = default;
 };
