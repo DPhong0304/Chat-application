@@ -2,14 +2,16 @@
 
 using namespace std;
 
-StreamSocket::StreamSocket(){
-    fd = socket(protocol, type, protocol);
+StreamSocket::StreamSocket()
+: domain(AF_INET), protocol(0), connected(false), type(SOCK_STREAM)
+{
+    fd = socket(domain, type, protocol);
 }
  
 StreamSocket::StreamSocket(int port, const string& ipaddr)
-: StreamSocket(), domain(AF_INET), protocol(0), connected(false),
-type(SOCK_STREAM), port(port)
+: StreamSocket{}
 {
+    this->port = port;
     memset(&addr, 0, sizeof(Address));
     addr.sin_family = domain;
     inet_pton(domain, ipaddr.c_str(), &(addr.sin_addr));
@@ -31,6 +33,19 @@ void StreamSocket::SSconnect(const std::string& ipaddr, int port){
     connect(fd, (sockaddr*) &remoteaddr, sizeof(Address));
 }
 
-void StreamSocket::SSlisten(int backlog){
+StreamSocket& StreamSocket::operator=(const StreamSocket& other){
+    fd = other.fd;
+    other.fd = -1;
+    domain = other.domain;
+    connected = other.connected;
 
+    return *this;
+}
+
+void StreamSocket::SSlisten(int backlog){
+    listen(fd, backlog);
+}
+
+StreamSocket::~StreamSocket(){
+    close(fd);
 }
