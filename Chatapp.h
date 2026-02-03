@@ -11,6 +11,7 @@ private:
     // std::vector<StreamSocket> connectionList;
     // char hostip[INET_ADDRSTRLEN];
     int port;
+    std::string username;
     Chatapp();
 
 public:

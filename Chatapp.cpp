@@ -17,45 +17,29 @@ Chatapp::Chatapp(const int& argc, char* argv[])
 {
     if (argc < 2){
         while (!is_valid_port(this->port)){
-            cout << "Please input valid port for this application: " << endl;
+            cout << "Please input valid port for this application: ";
             cin >> this->port;
         }
     }
     else{
         this->port = stoi(argv[1]);
     }
+
+    while (this->username.empty()){
+        cout << "Enter your username: ";    
+        getline(cin, this->username);
+        this->username.erase(0, this->username.find_first_not_of(" \t")); 
+    }
 }
 
 void Chatapp::cmdInterface(){
     string command;
     while (1){
-        cin >> command;
-        if (command == "help"){
-            this->help();
-        }
-        else if (command == "myip"){
-            this->myip();
-        }
-        else if (command == "myport"){
-            this->myport();
-        }
-        else if (command == "connect"){
+        if (commandHandler(command, *this)){
             continue;
         }
-        else if (command == "list"){
+        else{
             continue;
-        }
-        else if (command == "terminate"){
-            continue;
-        }
-        else if (command == "send"){
-            continue;
-        }
-        else if (command == "exit"){
-            this->exit();
-        }
-        else{#include <iostream>
-            cout << "Invalid command. Type 'help' to see the list of commands." << endl;
         }
     }
 }
@@ -98,4 +82,41 @@ void Chatapp::send(int connectionID, const std::string& message){
 void Chatapp::exit(){
     cout << "Exiting chat application..." << endl;
     std::exit(0);
+}
+
+int commandHandler(std::string& command, Chatapp& app){
+    cout << app.username << "@chatapp> ";
+    getline(cin, command);
+    command.erase(0, command.find_first_not_of(" \t")); 
+    if (command.empty()) { 
+        return -1;
+    }
+    if (command == "help"){
+        app.help();
+    }
+    else if (command == "myip"){
+        app.myip();
+    }
+    else if (command == "myport"){
+        app.myport();
+    }
+    else if (command == "connect"){
+        return -1;
+    }
+    else if (command == "list"){
+        app.list();
+    }
+    else if (command == "terminate"){
+        return -1;
+    }
+    else if (command == "send"){
+        return -1;
+    }
+    else if (command == "exit"){
+        app.exit();
+    }
+    else{
+        cout << "Invalid command. Type 'help' to see the list of commands." << endl;
+    }
+    return 0;
 }
