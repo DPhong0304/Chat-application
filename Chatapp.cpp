@@ -1,7 +1,10 @@
 // #include "StreamSocket.h"
 #include "Chatapp.h"
+#include <unistd.h>
 
 using namespace std;
+int loop = 0;
+
 
 bool is_valid_port(int port) {
     return port >= 1 && port <= 65535;
@@ -25,23 +28,35 @@ Chatapp::Chatapp(const int& argc, char* argv[])
         this->port = stoi(argv[1]);
     }
 
-    while (this->username.empty()){
-        cout << "Enter your username: ";    
-        getline(cin, this->username);
-        this->username.erase(0, this->username.find_first_not_of(" \t")); 
-    }
+    this->username = "kittykitty";
+
+    // while (this->username.empty()){
+    //     cout << "Enter your username: ";    
+    //     getline(cin, this->username);
+    //     this->username.erase(0, this->username.find_first_not_of(" \t")); 
+    // }
 }
 
 void Chatapp::cmdInterface(){
     string command;
+    fd_set readfds;
+    int readynum, nfds = 3;
 
-    fd_set readfds, writefds;
-    int ready, nfds;
     while (1){
-        if (commandHandler(command, *this)){
-            continue;
+        cout << loop << this->username << "@chatapp> ";
+        cout.flush();
+        FD_ZERO(&readfds); 
+        FD_SET(STDIN_FILENO, &readfds);
+        if (select(nfds, &readfds, NULL, NULL, NULL) == -1){
+            cerr << "select error!" << endl;
         }
         
+        if (FD_ISSET(STDIN_FILENO, &readfds)){
+            if (commandHandler(command, *this) == -1){
+                cerr << "command error!" << endl;
+            }
+        }
+        loop++;
     }
 }
 
@@ -82,15 +97,16 @@ void Chatapp::send(int connectionID, const std::string& message){
 
 void Chatapp::exit(){
     cout << "Exiting chat application..." << endl;
+    cout.flush();
     std::exit(0);
 }
 
 int commandHandler(std::string& command, Chatapp& app){
-    cout << app.username << "@chatapp> ";
     getline(cin, command);
     command.erase(0, command.find_first_not_of(" \t")); 
+
     if (command.empty()) { 
-        return -1;
+        return 0;
     }
     if (command == "help"){
         app.help();
@@ -120,4 +136,5 @@ int commandHandler(std::string& command, Chatapp& app){
         cout << "Invalid command. Type 'help' to see the list of commands." << endl;
     }
     return 0;
+
 }
