@@ -5,6 +5,9 @@
 #include <iostream>
 // #include "StreamSocket.h"
 
+int commandHandler(std::string& command, class Chatapp& app);
+// void connectionHandler(const std::string& message);
+
 class Chatapp {
 private:
     // StreamSocket listenSocket;     
@@ -26,4 +29,7 @@ public:
     void send(int connectionID, const std::string& message);
     void exit();
     ~Chatapp() = default;
+    friend int commandHandler(std::string& command, Chatapp& app);
+    // friend void connectionHandler(const std::string& message);
 };
+
