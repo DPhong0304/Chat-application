@@ -34,13 +34,14 @@ Chatapp::Chatapp(const int& argc, char* argv[])
 
 void Chatapp::cmdInterface(){
     string command;
+
+    fd_set readfds, writefds;
+    int ready, nfds;
     while (1){
         if (commandHandler(command, *this)){
             continue;
         }
-        else{
-            continue;
-        }
+        
     }
 }
 
