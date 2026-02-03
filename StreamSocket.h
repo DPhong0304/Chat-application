@@ -25,11 +25,15 @@ private:
     Address addr;
 
 public:
-    StreamSocket(int port, std::string& ipaddr);
-    StreamSocket(int fd);                
+    StreamSocket();
+    StreamSocket(int port, const std::string& ipaddr);
+    StreamSocket(int fd); 
+    StreamSocket(const StreamSocket&) = delete;
+    StreamSocket& operator=(const StreamSocket& other);
+    // StreamSocket& operator=(const StreamSocket&& other); 
     ~StreamSocket();
-    void SSconnect();
-    void SSbindandlisten(int backlog);
+    void SSconnect(const std::string& ip, int port);
+    void SSlisten(int backlog);
     StreamSocket SSaccept();
     int SSsend(string& mesg);
     std::string SSrecv();
