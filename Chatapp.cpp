@@ -1,6 +1,7 @@
 // #include "StreamSocket.h"
 #include "Chatapp.h"
 #include <unistd.h>
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
 
 using namespace std;
 int loop = 0;
@@ -18,6 +19,7 @@ Chatapp::Chatapp(){
 Chatapp::Chatapp(const int& argc, char* argv[])
 : Chatapp{} 
 {
+    // input port
     if (argc < 2){
         while (!is_valid_port(this->port)){
             cout << "Please input valid port for this application: ";
@@ -28,26 +30,34 @@ Chatapp::Chatapp(const int& argc, char* argv[])
         this->port = stoi(argv[1]);
     }
 
-    this->username = "kittykitty";
+    // input username 
+    while (this->username.empty()){
+        cout << "Enter your username: ";    
+        getline(cin, this->username);
+        this->username.erase(0, this->username.find_first_not_of(" \t")); 
+    }
 
-    // while (this->username.empty()){
-    //     cout << "Enter your username: ";    
-    //     getline(cin, this->username);
-    //     this->username.erase(0, this->username.find_first_not_of(" \t")); 
-    // }
+    // setup listening socket
+    listenSocket = StreamSocket{port, "0.0.0.0"};
+    listenSocket.SSlisten(SOMAXCONN);
 }
+
+Chatapp::~Chatapp() = default;
 
 void Chatapp::cmdInterface(){
     string command;
+    string inMesg;
     fd_set readfds;
-    int readynum, nfds = 3;
+    int readynum, nfds = listenSocket.getfd();
 
     while (1){
-        cout << loop << this->username << "@chatapp> ";
+        cout << this->username << "@chatapp> ";
         cout.flush();
         FD_ZERO(&readfds); 
         FD_SET(STDIN_FILENO, &readfds);
-        if (select(nfds, &readfds, NULL, NULL, NULL) == -1){
+        FD_SET(listenSocket.getfd(), &readfds);
+
+        if (select(nfds, &readfds, nullptr, nullptr, nullptr) == -1){
             cerr << "select error!" << endl;
         }
         
@@ -56,7 +66,18 @@ void Chatapp::cmdInterface(){
                 cerr << "command error!" << endl;
             }
         }
-        loop++;
+
+        if (FD_ISSET(listenSocket.getfd(), &readfds)){
+            connectionList.emplace_back(listenSocket.SSaccept());
+            nfds = MAX(connectionList.back().getfd() + 1, nfds);
+        }
+
+        for (auto& socket : connectionList){
+            if (FD_ISSET(socket.getfd(), &readfds)){
+                inMesg = socket.SSrecv();
+                cout << "From " << socket.getpeername() << ": "<< inMesg <<endl;
+            }
+        }
     }
 }
 
