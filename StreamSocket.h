@@ -23,18 +23,24 @@ private:
     int type;
     int port;
     Address addr;
+    Address peeraddr;   
+    std::string peername;
 
 public:
     StreamSocket();
     StreamSocket(int port, const std::string& ipaddr);
-    StreamSocket(int fd); 
+    StreamSocket(int fd, Address peeraddr, std::string& peername);// for accept
+
     StreamSocket(const StreamSocket&) = delete;
-    StreamSocket& operator=(const StreamSocket& other);
-    // StreamSocket& operator=(const StreamSocket&& other); 
     ~StreamSocket();
+    // StreamSocket& operator=(StreamSocket& other);
+    // StreamSocket& operator=(const StreamSocket&& other); 
     void SSconnect(const std::string& ip, int port);
     void SSlisten(int backlog);
+    void SSbind(const std::string& ipaddr);
     StreamSocket SSaccept();
-    int SSsend(string& mesg);
+    int SSsend(std::string& mesg);
     std::string SSrecv();
+    int getfd() const;
+    std::string getpeername() const;
 };
