@@ -19,6 +19,7 @@ Chatapp::Chatapp(){
 Chatapp::Chatapp(const int& argc, char* argv[])
 : Chatapp{} 
 {
+    hostip = get_lan_ip();
     // input port
     if (argc < 2){
         while (!is_valid_port(this->port)){
@@ -51,7 +52,7 @@ void Chatapp::cmdInterface(){
     int readynum, nfds = listenSocket.getfd() + 1;
 
     while (1){
-        cout << this->username << "@chatapp> ";
+        cout << username << "@chatapp> ";
         cout.flush();
 
         // fd set
@@ -100,7 +101,7 @@ void Chatapp::appHelp(){
     cout << "exit                               - Closes all connections and terminates this process" << endl;
 };
 
-std::string get_lan_ip() {
+string get_lan_ip() {
     struct ifaddrs *ifaddr, *ifa;
 
     if (getifaddrs(&ifaddr) == -1) {
@@ -114,7 +115,9 @@ std::string get_lan_ip() {
         // IPv4 only
         if (ifa->ifa_addr->sa_family == AF_INET) {
             auto *sa = (struct sockaddr_in *)ifa->ifa_addr;
-            std::string ip = inet_ntoa(sa->sin_addr);
+            char ip_str[INET_ADDRSTRLEN];
+            inet_ntop(AF_INET, &sa->sin_addr, ip_str, INET_ADDRSTRLEN);
+            std::string ip = ip_str;
 
             // skip loopback
             if (ip != "127.0.0.1") {
@@ -129,12 +132,12 @@ std::string get_lan_ip() {
 }
 
 void Chatapp::myip(){
-    string ip = get_lan_ip();
-    if (ip.empty()){
-        cout << "Cannot query ip!" << endl;
+    if (hostip.empty()){
+        cout << "Cannot query ip! Try again" << endl;
+        hostip = get_lan_ip();
         return;
     }
-    cout << "My ip address is: " << ip << endl;
+    cout << "My ip address is: " << hostip << endl;
 }
 
 void Chatapp::myport(){
@@ -160,15 +163,19 @@ void Chatapp::appList(){
 }
 
 void Chatapp::appTerminate(int connectionID){
-    
-}
-
-void Chatapp::appSend(int connectionID, const std::string& message){
     if (!isValidConnID(connectionID)){
         cout << "The connection ID " << connectionID <<" is not identified! Type \"list\" for more information about connetion ID" << endl;
         return;
     }
+    connectionList.erase(connectionList.begin() + connectionID - 1);    
+}
 
+void Chatapp::appSend(int connectionID, std::string& message){
+    if (!isValidConnID(connectionID)){
+        cout << "The connection ID " << connectionID <<" is not identified! Type \"list\" for more information about connetion ID" << endl;
+        return;
+    }
+    connectionList[connectionID - 1].SSsend(message);
 }
 
 void Chatapp::appExit(){

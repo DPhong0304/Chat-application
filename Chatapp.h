@@ -10,6 +10,7 @@
 
 
 int commandHandler(std::string& command, class Chatapp& app);
+std::string get_lan_ip();
 // void connectionHandler(const std::string& message);
 
 class Chatapp {
@@ -31,11 +32,9 @@ public:
     void appConnect(const std::string& remoteip, int remoteport);  
     void appList();
     void appTerminate(int connectionID);
-    void appSend(int connectionID, const std::string& message);
+    void appSend(int connectionID, std::string& message);
     void appExit();
     bool isValidConnID(int connectionID);
     friend int commandHandler(std::string& command, Chatapp& app);
     // friend void connectionHandler(const std::string& message);
 };
-
-std::string get_lan_ip();
