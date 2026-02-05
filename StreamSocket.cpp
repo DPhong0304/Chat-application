@@ -24,12 +24,11 @@ StreamSocket::StreamSocket(int port, const string& ipaddr)
 }
 
 void StreamSocket::SSconnect(const std::string& ipaddr, int port){
-    Address remoteaddr;
-    memset(&remoteaddr, 0, sizeof(Address));
-    remoteaddr.sin_family = domain;
-    inet_pton(domain, ipaddr.c_str(), &(remoteaddr.sin_addr));
-    remoteaddr.sin_port = htons(port);
-    connect(fd, (sockaddr*) &remoteaddr, sizeof(Address));
+    memset(&peeraddr, 0, sizeof(Address));
+    peeraddr.sin_family = domain;
+    inet_pton(domain, ipaddr.c_str(), &(peeraddr.sin_addr));
+    peeraddr.sin_port = htons(port);
+    connect(fd, (sockaddr*) &peeraddr, sizeof(Address));
 }
 
 // StreamSocket& StreamSocket::operator=(StreamSocket& other){
@@ -48,6 +47,9 @@ StreamSocket::StreamSocket(int fd, Address peeraddr, string& peername)
 StreamSocket StreamSocket::SSaccept() {
     socklen_t len = sizeof(peeraddr);
     int connfd = accept(fd, (sockaddr*)&peeraddr, &len);
+    char buff[NAMELEN];
+    recv(connfd, buff, sizeof(buff), 0);
+    peername = string(buff);
     return StreamSocket(connfd, peeraddr, peername);
 }
 
@@ -66,4 +68,20 @@ int StreamSocket::getfd() const{
 
 string StreamSocket::getpeername() const{
     return peername;
+}
+
+string StreamSocket::getpeerip_P() const{
+    char buf[INET_ADDRSTRLEN];
+    inet_ntop(domain, &(peeraddr.sin_addr), buf, INET_ADDRSTRLEN);
+    return buf;
+}
+
+void StreamSocket::SSsend(string& mesg){
+    send(fd, mesg.c_str(), mesg.size(), 0);
+}
+
+string StreamSocket::SSrecv(){
+    char buf[BUFSIZE];
+    ssize_t numRead = recv(fd, buf, BUFSIZE, 0);
+    return string(buf, numRead);
 }

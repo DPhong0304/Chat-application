@@ -12,6 +12,9 @@
 #include <string.h>
 // #include <sys/types.h>
 
+#define NAMELEN 100
+#define BUFSIZE 4096
+
 using Address = sockaddr_in;
 
 class StreamSocket{
@@ -39,8 +42,10 @@ public:
     void SSlisten(int backlog);
     void SSbind(const std::string& ipaddr);
     StreamSocket SSaccept();
-    int SSsend(std::string& mesg);
+    void SSsend(std::string& mesg);
     std::string SSrecv();
     int getfd() const;
     std::string getpeername() const;
+    std::string getpeerip_P() const;
+
 };
