@@ -1,6 +1,7 @@
 // #include "StreamSocket.h"
 #include "Chatapp.h"
 #include <unistd.h>
+#include <limits>
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 
 using namespace std;
@@ -19,11 +20,32 @@ Chatapp::Chatapp(){
 Chatapp::Chatapp(const int& argc, char* argv[])
 : Chatapp{} 
 {
+    hostip = get_lan_ip();
     // input port
     if (argc < 2){
-        while (!is_valid_port(this->port)){
-            cout << "Please input valid port for this application: ";
-            cin >> this->port;
+        while (true) {
+            cout << "Please input valid port for this application: " << flush;
+
+            string line;
+            getline(cin, line);
+
+            if (line.empty()) {
+                cout << "Input cannot be empty.\n";
+                continue;
+            }
+
+            try {
+                int p = stoi(line);
+                if (!is_valid_port(p)) {
+                    cout << "Port must be between 1 and 65535.\n";
+                    continue;
+                }
+                this->port = p;
+                break;
+            }
+            catch (...) {
+                cout << "Invalid number format.\n";
+            }
         }
     }
     else{
@@ -32,7 +54,7 @@ Chatapp::Chatapp(const int& argc, char* argv[])
 
     // input username 
     while (this->username.empty()){
-        cout << "Enter your username: ";    
+        cout << "Enter your username: " << flush;    
         getline(cin, this->username);
         this->username.erase(0, this->username.find_first_not_of(" \t")); 
     }
@@ -48,30 +70,38 @@ void Chatapp::cmdInterface(){
     string command;
     string inMesg;
     fd_set readfds;
-    int readynum, nfds = listenSocket.getfd();
+    int readynum, nfds = listenSocket.getfd() + 1;
 
     while (1){
-        cout << this->username << "@chatapp> ";
-        cout.flush();
+        cout << username << "@chatapp> " << flush;
+
+        // fd set
         FD_ZERO(&readfds); 
         FD_SET(STDIN_FILENO, &readfds);
         FD_SET(listenSocket.getfd(), &readfds);
+        for (auto& socket : connectionList){
+            FD_SET(socket.getfd(), &readfds);
+        }
 
         if (select(nfds, &readfds, nullptr, nullptr, nullptr) == -1){
             cerr << "select error!" << endl;
         }
         
+        // command processing stdin
         if (FD_ISSET(STDIN_FILENO, &readfds)){
             if (commandHandler(command, *this) == -1){
                 cerr << "command error!" << endl;
             }
         }
 
+        // new connection
         if (FD_ISSET(listenSocket.getfd(), &readfds)){
             connectionList.emplace_back(listenSocket.SSaccept());
+            cout << "New connection established from " << connectionList.back().getpeername() << endl;
             nfds = MAX(connectionList.back().getfd() + 1, nfds);
         }
 
+        // message income
         for (auto& socket : connectionList){
             if (FD_ISSET(socket.getfd(), &readfds)){
                 inMesg = socket.SSrecv();
@@ -81,7 +111,7 @@ void Chatapp::cmdInterface(){
     }
 }
 
-void Chatapp::help(){
+void Chatapp::appHelp(){
     cout << "help                               - Displays all the commands supported by this chat application" << endl;
     cout << "myip                               - Displays the IP address of this process" << endl;
     cout << "myport                             - Displays the port on which this process is listening for incoming connections" << endl;
@@ -92,70 +122,149 @@ void Chatapp::help(){
     cout << "exit                               - Closes all connections and terminates this process" << endl;
 };
 
+string get_lan_ip() {
+    struct ifaddrs *ifaddr, *ifa;
+
+    if (getifaddrs(&ifaddr) == -1) {
+        return "";
+    }
+
+    for (ifa = ifaddr; ifa != nullptr; ifa = ifa->ifa_next) {
+        if (!ifa->ifa_addr)
+            continue;
+
+        // IPv4 only
+        if (ifa->ifa_addr->sa_family == AF_INET) {
+            auto *sa = (struct sockaddr_in *)ifa->ifa_addr;
+            char ip_str[INET_ADDRSTRLEN];
+            inet_ntop(AF_INET, &sa->sin_addr, ip_str, INET_ADDRSTRLEN);
+            std::string ip = ip_str;
+
+            // skip loopback
+            if (ip != "127.0.0.1") {
+                freeifaddrs(ifaddr);
+                return ip;
+            }
+        }
+    }
+
+    freeifaddrs(ifaddr);
+    return "";
+}
+
 void Chatapp::myip(){
-    cout << "My IP address is: " << endl;
+    if (hostip.empty()){
+        cout << "Cannot query ip! Try again" << endl;
+        hostip = get_lan_ip();
+        return;
+    }
+    cout << "My ip address is: " << hostip << endl;
 }
 
 void Chatapp::myport(){
     cout << "My port number is: " << this->port << endl;
 }
 
-void Chatapp::connect(const std::string& ip, int port){
-    
+void Chatapp::appConnect(const std::string& remoteip, int remoteport){
+    StreamSocket newSocket{};
+    newSocket.SSconnect(remoteip, remoteport);
+    newSocket.SSsend(username);
+    connectionList.emplace_back(std::move(newSocket));
 }
 
-void Chatapp::list(){
-    
+void Chatapp::appList(){
+    cout << "ConnID" << "fd" << "hostname" << "ip" << endl;
+    int connid = 0;
+    string peerip;
+    for (auto& socket : connectionList){
+        connid++;
+        peerip = socket.getpeerip_P();
+        cout << connid << socket.getfd() << socket.getpeername() << socket.getpeerip_P()<< endl;
+    }
 }
 
-void Chatapp::terminate(int connectionID){
-    
+void Chatapp::appTerminate(int connectionID){
+    if (!isValidConnID(connectionID)){
+        cout << "The connection ID " << connectionID <<" is not identified! Type \"list\" for more information about connetion ID" << endl;
+        return;
+    }
+    connectionList.erase(connectionList.begin() + connectionID - 1);    
 }
 
-void Chatapp::send(int connectionID, const std::string& message){
-    
+void Chatapp::appSend(int connectionID, std::string& message){
+    if (!isValidConnID(connectionID)){
+        cout << "The connection ID " << connectionID <<" is not identified! Type \"list\" for more information about connetion ID" << endl;
+        return;
+    }
+    connectionList[connectionID - 1].SSsend(message);
 }
 
-void Chatapp::exit(){
+void Chatapp::appExit(){
     cout << "Exiting chat application..." << endl;
     cout.flush();
     std::exit(0);
 }
 
+vector<string> split(const string& s) {
+    istringstream iss(s);
+    vector<std::string> tokens;
+    string token;
+
+    while (iss >> token) {      
+        tokens.push_back(token);
+    }
+    return tokens;
+}
+
 int commandHandler(std::string& command, Chatapp& app){
     getline(cin, command);
     command.erase(0, command.find_first_not_of(" \t")); 
-
+    
     if (command.empty()) { 
         return 0;
     }
-    if (command == "help"){
-        app.help();
+
+    vector<string> args{split(command)};
+
+    cout << "Processing command: " << args[0] << endl;
+    for (const auto& arg : args) {
+        cout << "Arg: " << arg << endl;
     }
-    else if (command == "myip"){
+
+    if (args[0] == "help"){
+        app.appHelp();
+    }
+    else if (args[0] == "myip"){
         app.myip();
     }
-    else if (command == "myport"){
+    else if (args[0] == "myport"){
         app.myport();
     }
-    else if (command == "connect"){
-        return -1;
+    else if (args[0] == "connect"){
+        if (args.size() < 3) return -1;
+        app.appConnect(args[1], stoi(args[2]));
     }
-    else if (command == "list"){
-        app.list();
+    else if (args[0] == "list"){ 
+        app.appList();
     }
-    else if (command == "terminate"){
-        return -1;
+    else if (args[0] == "terminate"){
+        if (args.size() < 2) return -1;
+        app.appTerminate(stoi(args[1]));
     }
-    else if (command == "send"){
-        return -1;
+    else if (args[0] == "send"){
+        if (args.size() < 3) return -1;
+        app.appSend(stoi(args[1]), args[2]);
     }
-    else if (command == "exit"){
-        app.exit();
+    else if (args[0] == "exit"){
+        app.appExit();
     }
     else{
-        cout << "Invalid command. Type 'help' to see the list of commands." << endl;
+        cout << "Command \"" << args[0] << "\" not found. Type 'help' to see the list of commands." << endl;
     }
     return 0;
 
+}
+
+bool Chatapp::isValidConnID(int connID){
+    return connID >= 1 && connID <= connectionList.size();
 }
