@@ -1,6 +1,7 @@
 // #include "StreamSocket.h"
 #include "Chatapp.h"
 #include <unistd.h>
+#include <limits>
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 
 using namespace std;
@@ -22,9 +23,29 @@ Chatapp::Chatapp(const int& argc, char* argv[])
     hostip = get_lan_ip();
     // input port
     if (argc < 2){
-        while (!is_valid_port(this->port)){
-            cout << "Please input valid port for this application: ";
-            cin >> this->port;
+        while (true) {
+            cout << "Please input valid port for this application: " << flush;
+        
+            string line;
+            getline(cin, line);
+        
+            if (line.empty()) {
+                cout << "Input cannot be empty.\n";
+                continue;
+            }
+        
+            try {
+                int p = stoi(line);
+                if (!is_valid_port(p)) {
+                    cout << "Port must be between 1 and 65535.\n";
+                    continue;
+                }
+                this->port = p;
+                break;
+            }
+            catch (...) {
+                cout << "Invalid number format.\n";
+            }
         }
     }
     else{
@@ -33,7 +54,7 @@ Chatapp::Chatapp(const int& argc, char* argv[])
 
     // input username 
     while (this->username.empty()){
-        cout << "Enter your username: ";    
+        cout << "Enter your username: " << flush;    
         getline(cin, this->username);
         this->username.erase(0, this->username.find_first_not_of(" \t")); 
     }
@@ -52,8 +73,7 @@ void Chatapp::cmdInterface(){
     int readynum, nfds = listenSocket.getfd() + 1;
 
     while (1){
-        cout << username << "@chatapp> ";
-        cout.flush();
+        cout << username << "@chatapp> " << flush;
 
         // fd set
         FD_ZERO(&readfds); 
