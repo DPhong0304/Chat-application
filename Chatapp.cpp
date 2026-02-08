@@ -233,7 +233,7 @@ int commandHandler(std::string& command, Chatapp& app){
         app.appExit();
     }
     else{
-        cout << "Command \"" << args[0] << "\"not found. Type 'help' to see the list of commands." << endl;
+        cout << "Command \"" << args[0] << "\" not found. Type 'help' to see the list of commands." << endl;
     }
     return 0;
 
