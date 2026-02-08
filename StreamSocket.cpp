@@ -39,15 +39,43 @@ StreamSocket::StreamSocket(int fd, Address peeraddr, string& peername)
 {
 }
 
+// StreamSocket StreamSocket::SSaccept() {
+//     socklen_t len = sizeof(peeraddr);
+//     int connfd = accept(fd, (sockaddr*)&peeraddr, &len);
+//     char buff[NAMELEN];
+//     recv(connfd, buff, sizeof(buff), 0);
+//     peername = string(buff);
+//     cout << "Accepted connection from " << peername << endl;
+//     return StreamSocket(connfd, peeraddr, peername);
+// }
+
 StreamSocket StreamSocket::SSaccept() {
     socklen_t len = sizeof(peeraddr);
     int connfd = accept(fd, (sockaddr*)&peeraddr, &len);
+    if (connfd < 0) {
+        perror("accept");
+        return StreamSocket{}; // or throw
+    }
+
     char buff[NAMELEN];
-    recv(connfd, buff, sizeof(buff), 0);
-    peername = string(buff);
-    cout << "Accepted connection from " << peername << endl;
-    return StreamSocket(connfd, peeraddr, peername);
+    ssize_t n = recv(connfd, buff, sizeof(buff), 0);
+    if (n <= 0) {
+        if (n < 0) perror("recv(username)");
+        // close and return something invalid, or handle better
+        close(connfd);
+        return StreamSocket{};
+    }
+
+    std::string pname(buff, (size_t)n);
+    // optional: trim newline/spaces
+    while (!pname.empty() && (pname.back() == '\n' || pname.back() == '\r' || pname.back() == ' '))
+        pname.pop_back();
+
+    std::string passed_name = pname;
+    cout << "Accepted connection from " << passed_name << endl;
+    return StreamSocket(connfd, peeraddr, passed_name);
 }
+
 
 void StreamSocket::SSlisten(int backlog){
     listen(fd, backlog);
@@ -77,11 +105,33 @@ void StreamSocket::SSsend(string& mesg){
     send(fd, mesg.c_str(), mesg.size(), 0);
 }
 
-string StreamSocket::SSrecv(){
+// string StreamSocket::SSrecv(){
+//     char buf[BUFSIZE];
+//     ssize_t numRead = recv(fd, buf, BUFSIZE, 0);
+//     return string(buf, numRead);
+// }
+
+std::string StreamSocket::SSrecv() {
     char buf[BUFSIZE];
-    ssize_t numRead = recv(fd, buf, BUFSIZE, 0);
-    return string(buf, numRead);
+
+    ssize_t n = recv(fd, buf, sizeof(buf), 0);
+    if (n > 0) {
+        return std::string(buf, (size_t)n);
+    }
+    if (n == 0) {
+        // peer closed cleanly
+        return ""; // use empty to mean "disconnected"
+    }
+
+    // n < 0
+    if (errno == EINTR) return "";          // interrupted, try again in caller
+    if (errno == EAGAIN || errno == EWOULDBLOCK) return ""; // if nonblocking later
+
+    // real error
+    perror("recv");
+    return "";
 }
+
 
 StreamSocket::StreamSocket(StreamSocket&& other)
 : fd{other.fd}, domain{other.domain}, protocol{other.protocol}, connected{other.connected},
