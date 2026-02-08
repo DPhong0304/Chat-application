@@ -33,11 +33,15 @@ public:
     StreamSocket();
     StreamSocket(int port, const std::string& ipaddr);
     StreamSocket(int fd, Address peeraddr, std::string& peername);// for accept
-
-    StreamSocket(const StreamSocket&) = delete;
     ~StreamSocket();
-    // StreamSocket& operator=(StreamSocket& other);
-    // StreamSocket& operator=(const StreamSocket&& other); 
+
+    //copy semantics deleted
+    StreamSocket(const StreamSocket&) = delete;
+    StreamSocket& operator=(const StreamSocket& other) = delete;
+
+    //move semantics added
+    StreamSocket(StreamSocket&& other);
+    StreamSocket& operator=(StreamSocket&& other); 
     void SSconnect(const std::string& ip, int port);
     void SSlisten(int backlog);
     void SSbind(const std::string& ipaddr);

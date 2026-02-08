@@ -148,7 +148,7 @@ void Chatapp::appConnect(const std::string& remoteip, int remoteport){
     StreamSocket newSocket{};
     newSocket.SSconnect(remoteip, remoteport);
     newSocket.SSsend(username);
-    connectionList.emplace_back(newSocket);
+    connectionList.emplace_back(std::move(newSocket));
 }
 
 void Chatapp::appList(){
