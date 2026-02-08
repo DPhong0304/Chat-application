@@ -17,7 +17,7 @@ class Chatapp {
 private:
     StreamSocket listenSocket;     
     std::vector<StreamSocket> connectionList;
-    char hostip[INET_ADDRSTRLEN];
+    std::string hostip;
     int port;
     std::string username;
     Chatapp();

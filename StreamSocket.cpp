@@ -31,14 +31,6 @@ void StreamSocket::SSconnect(const std::string& ipaddr, int port){
     connect(fd, (sockaddr*) &peeraddr, sizeof(Address));
 }
 
-// StreamSocket& StreamSocket::operator=(StreamSocket& other){
-//     fd = other.fd;
-//     other.fd = -1;
-//     domain = other.domain;
-//     connected = other.connected;
-//     return *this;
-// }
-
 StreamSocket::StreamSocket(int fd, Address peeraddr, string& peername)
 : fd{fd}, peeraddr{peeraddr}, peername{peername}
 {
@@ -84,4 +76,29 @@ string StreamSocket::SSrecv(){
     char buf[BUFSIZE];
     ssize_t numRead = recv(fd, buf, BUFSIZE, 0);
     return string(buf, numRead);
+}
+
+StreamSocket::StreamSocket(StreamSocket&& other)
+: fd{other.fd}, domain{other.domain}, protocol{other.protocol}, connected{other.connected},
+  type{other.type}, port{other.port}, addr{other.addr}, peeraddr{other.peeraddr}, peername{std::move(other.peername)}
+{
+    other.fd = -1; 
+}
+
+StreamSocket& StreamSocket::operator=(StreamSocket&& other){
+    if (this != &other){
+        if (fd != -1)
+            close(fd);
+        fd = other.fd;
+        domain = other.domain;
+        protocol = other.protocol;
+        connected = other.connected;
+        type = other.type;
+        port = other.port;
+        addr = other.addr;
+        peeraddr = other.peeraddr;
+        peername = std::move(other.peername);
+        other.fd = -1; 
+    }
+    return *this;
 }
