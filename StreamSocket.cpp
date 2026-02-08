@@ -1,4 +1,5 @@
 #include "StreamSocket.h"
+#include <iostream>
 
 using namespace std;
 
@@ -14,6 +15,7 @@ void StreamSocket::SSbind(const string& ipaddr){
     inet_pton(domain, ipaddr.c_str(), &(addr.sin_addr));
     addr.sin_port = htons(port);
     bind(fd, (sockaddr*) &addr, sizeof(Address));
+    cout << "Bound to " << ipaddr << " on port " << port << endl;
 }
  
 StreamSocket::StreamSocket(int port, const string& ipaddr)
@@ -29,6 +31,7 @@ void StreamSocket::SSconnect(const std::string& ipaddr, int port){
     inet_pton(domain, ipaddr.c_str(), &(peeraddr.sin_addr));
     peeraddr.sin_port = htons(port);
     connect(fd, (sockaddr*) &peeraddr, sizeof(Address));
+    cout << "Connected to " << ipaddr << " on port " << port << endl;
 }
 
 StreamSocket::StreamSocket(int fd, Address peeraddr, string& peername)
@@ -42,11 +45,13 @@ StreamSocket StreamSocket::SSaccept() {
     char buff[NAMELEN];
     recv(connfd, buff, sizeof(buff), 0);
     peername = string(buff);
+    cout << "Accepted connection from " << peername << endl;
     return StreamSocket(connfd, peeraddr, peername);
 }
 
 void StreamSocket::SSlisten(int backlog){
     listen(fd, backlog);
+    cout << "Listening on port " << port << endl;
 }
 
 StreamSocket::~StreamSocket(){

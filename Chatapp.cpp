@@ -25,15 +25,15 @@ Chatapp::Chatapp(const int& argc, char* argv[])
     if (argc < 2){
         while (true) {
             cout << "Please input valid port for this application: " << flush;
-        
+
             string line;
             getline(cin, line);
-        
+
             if (line.empty()) {
                 cout << "Input cannot be empty.\n";
                 continue;
             }
-        
+
             try {
                 int p = stoi(line);
                 if (!is_valid_port(p)) {
@@ -97,6 +97,7 @@ void Chatapp::cmdInterface(){
         // new connection
         if (FD_ISSET(listenSocket.getfd(), &readfds)){
             connectionList.emplace_back(listenSocket.SSaccept());
+            cout << "New connection established from " << connectionList.back().getpeername() << endl;
             nfds = MAX(connectionList.back().getfd() + 1, nfds);
         }
 
@@ -224,6 +225,11 @@ int commandHandler(std::string& command, Chatapp& app){
     }
 
     vector<string> args{split(command)};
+
+    cout << "Processing command: " << args[0] << endl;
+    for (const auto& arg : args) {
+        cout << "Arg: " << arg << endl;
+    }
 
     if (args[0] == "help"){
         app.appHelp();
