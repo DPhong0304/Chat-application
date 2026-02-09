@@ -20,8 +20,9 @@ $(TEST) : $(TESTFILES)
 
 
 .PHONY: clean
-clean:
+clean: 
 	rm -f $(TARGET) $(TEST)
+	$(MAKE)	cleanhist
 
 cleanhist:
 	: > ./history/.command_history
