@@ -2,6 +2,7 @@
 #include "Chatapp.h"
 #include <unistd.h>
 #include <limits>
+#include <iomanip>
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 
 using namespace std;
@@ -97,6 +98,8 @@ void Chatapp::cmdInterface(){
         // new connection
         if (FD_ISSET(listenSocket.getfd(), &readfds)){
             connectionList.emplace_back(listenSocket.SSaccept());
+            connectionList.back().setpeername(connectionList.back().SSrecv()); // to get username
+            connectionList.back().SSsend(username); // send back my username
             cout << "New connection established from " << connectionList.back().getpeername() << endl;
             nfds = MAX(connectionList.back().getfd() + 1, nfds);
         }
@@ -167,19 +170,34 @@ void Chatapp::myport(){
 
 void Chatapp::appConnect(const std::string& remoteip, int remoteport){
     StreamSocket newSocket{};
-    newSocket.SSconnect(remoteip, remoteport);
-    // newSocket.SSsend(username);
+    if (newSocket.SSconnect(remoteip, remoteport) == -1){
+        cout << "Connection to " << remoteip << " on port " << remoteport << " failed!" << endl;
+        return;
+    }
+    newSocket.SSsend(username);
+    newSocket.setpeername(newSocket.SSrecv()); 
     connectionList.emplace_back(std::move(newSocket));
 }
 
-void Chatapp::appList(){
-    cout << "ConnID" << "fd" << "hostname" << "ip" << endl;
+void Chatapp::appList() {
+    cout << left
+         << setw(8)  << "ConnID"
+         << setw(6)  << "fd"
+         << setw(16) << "hostname"
+         << setw(16) << "ip"
+         << '\n';
+
+    cout << std::string(46, '-') << '\n';
+
     int connid = 0;
-    string peerip;
-    for (auto& socket : connectionList){
-        connid++;
-        peerip = socket.getpeerip_P();
-        cout << connid << socket.getfd() << socket.getpeername() << socket.getpeerip_P()<< endl;
+    for (auto& socket : connectionList) {
+        ++connid;
+        cout << left
+             << setw(8)  << connid
+             << setw(6)  << socket.getfd()
+             << setw(16) << socket.getpeername()
+             << setw(16) << socket.getpeerip_P()
+             << '\n';
     }
 }
 
@@ -214,6 +232,28 @@ vector<string> split(const string& s) {
         tokens.push_back(token);
     }
     return tokens;
+}
+
+string messageProcessing(const string& command, size_t startIndex) {
+    istringstream iss(command);
+    string token;
+    size_t currentIndex = 0;
+
+    while (currentIndex < startIndex && iss >> token) {
+        ++currentIndex;
+    }
+
+    string message;
+    getline(iss, message);
+
+    size_t firstNonSpace = message.find_first_not_of(" \t");
+    if (firstNonSpace != string::npos) {
+        message = message.substr(firstNonSpace);
+    } else {
+        message.clear(); 
+    }
+
+    return message;
 }
 
 int commandHandler(std::string& command, Chatapp& app){
@@ -253,7 +293,8 @@ int commandHandler(std::string& command, Chatapp& app){
     }
     else if (args[0] == "send"){
         if (args.size() < 3) return -1;
-        app.appSend(stoi(args[1]), args[2]);
+        string mesg = messageProcessing(command, 2);
+        app.appSend(stoi(args[1]), mesg);
     }
     else if (args[0] == "exit"){
         app.appExit();
