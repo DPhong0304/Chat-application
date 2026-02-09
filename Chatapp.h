@@ -11,6 +11,7 @@
 
 int commandHandler(std::string& command, class Chatapp& app);
 std::string get_lan_ip();
+std::string messageProcessing(const std::string& command, size_t startIndex);    
 // void connectionHandler(const std::string& message);
 
 class Chatapp {

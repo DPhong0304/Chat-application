@@ -32,7 +32,7 @@ private:
 public:
     StreamSocket();
     StreamSocket(int port, const std::string& ipaddr);
-    StreamSocket(int fd, Address peeraddr, std::string& peername);// for accept
+    StreamSocket(int fd, Address peeraddr, const std::string& peername);// for accept
     ~StreamSocket();
 
     //copy semantics deleted
@@ -42,7 +42,7 @@ public:
     //move semantics added
     StreamSocket(StreamSocket&& other);
     StreamSocket& operator=(StreamSocket&& other); 
-    void SSconnect(const std::string& ip, int port);
+    int SSconnect(const std::string& ip, int port);
     void SSlisten(int backlog);
     void SSbind(const std::string& ipaddr);
     StreamSocket SSaccept();
@@ -51,5 +51,5 @@ public:
     int getfd() const;
     std::string getpeername() const;
     std::string getpeerip_P() const;
-
+    void setpeername(const std::string& name);
 };
