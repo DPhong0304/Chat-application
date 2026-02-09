@@ -8,6 +8,14 @@
 using namespace std;
 int loop = 0;
 
+void commandLog(const string& command) {
+    string historyFile = "./history/.command_history";
+    FILE* file = fopen(historyFile.c_str(), "a");
+    if (file) {
+        fprintf(file, "%s\n", command.c_str());
+        fclose(file);
+    }
+}
 
 bool is_valid_port(int port) {
     return port >= 1 && port <= 65535;
@@ -185,6 +193,7 @@ void Chatapp::appList() {
          << setw(6)  << "fd"
          << setw(16) << "hostname"
          << setw(16) << "ip"
+         << setw(10) << "port"
          << '\n';
 
     cout << std::string(46, '-') << '\n';
@@ -197,6 +206,7 @@ void Chatapp::appList() {
              << setw(6)  << socket.getfd()
              << setw(16) << socket.getpeername()
              << setw(16) << socket.getpeerip_P()
+             << setw(10) << socket.getpeerport()
              << '\n';
     }
 }
@@ -263,13 +273,13 @@ int commandHandler(std::string& command, Chatapp& app){
     if (command.empty()) { 
         return 0;
     }
-
+    commandLog(command);
     vector<string> args{split(command)};
 
-    cout << "Processing command: " << args[0] << endl;
-    for (const auto& arg : args) {
-        cout << "Arg: " << arg << endl;
-    }
+    // cout << "Processing command: " << args[0] << endl;
+    // for (const auto& arg : args) {
+    //     cout << "Arg: " << arg << endl;
+    // }
 
     if (args[0] == "help"){
         app.appHelp();
