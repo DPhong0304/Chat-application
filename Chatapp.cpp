@@ -276,10 +276,10 @@ int commandHandler(std::string& command, Chatapp& app){
     commandLog(command);
     vector<string> args{split(command)};
 
-    cout << "Processing command: " << args[0] << endl;
-    for (const auto& arg : args) {
-        cout << "Arg: " << arg << endl;
-    }
+    // cout << "Processing command: " << args[0] << endl;
+    // for (const auto& arg : args) {
+    //     cout << "Arg: " << arg << endl;
+    // }
 
     if (args[0] == "help"){
         app.appHelp();
