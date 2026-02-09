@@ -8,6 +8,14 @@
 using namespace std;
 int loop = 0;
 
+void commandLog(const string& command) {
+    string historyFile = "./history/.command_history";
+    FILE* file = fopen(historyFile.c_str(), "a");
+    if (file) {
+        fprintf(file, "%s\n", command.c_str());
+        fclose(file);
+    }
+}
 
 bool is_valid_port(int port) {
     return port >= 1 && port <= 65535;
@@ -263,7 +271,7 @@ int commandHandler(std::string& command, Chatapp& app){
     if (command.empty()) { 
         return 0;
     }
-
+    commandLog(command);
     vector<string> args{split(command)};
 
     cout << "Processing command: " << args[0] << endl;

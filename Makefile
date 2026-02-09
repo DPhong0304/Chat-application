@@ -4,11 +4,11 @@ FLAGS =
 
 TARGET = chatapp
 
-TEST = test
+TEST = ./testdir/test
 
 FILES = Chatapp.cpp main.cpp StreamSocket.cpp
 
-TESTFILES = StreamSocket.cpp test.cpp
+TESTFILES = StreamSocket.cpp ./testdir/test.cpp
 
 $(TARGET) : $(FILES)
 	$(CC) $(FLAGS) $(FILES) -o $(TARGET)
@@ -18,5 +18,10 @@ t: $(TEST)
 $(TEST) : $(TESTFILES)
 	$(CC) $(FLAGS) $(TESTFILES) -o $(TEST)
 
+
+.PHONY: clean
 clean:
 	rm -f $(TARGET) $(TEST)
+
+cleanhist:
+	: > ./history/.command_history
