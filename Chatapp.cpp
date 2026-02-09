@@ -193,6 +193,7 @@ void Chatapp::appList() {
          << setw(6)  << "fd"
          << setw(16) << "hostname"
          << setw(16) << "ip"
+         << setw(10) << "port"
          << '\n';
 
     cout << std::string(46, '-') << '\n';
@@ -205,6 +206,7 @@ void Chatapp::appList() {
              << setw(6)  << socket.getfd()
              << setw(16) << socket.getpeername()
              << setw(16) << socket.getpeerip_P()
+             << setw(10) << socket.getpeerport()
              << '\n';
     }
 }
