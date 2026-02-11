@@ -20,8 +20,10 @@ enum status_t{
 
 class Chatapp {
 private:
+    
     StreamSocket listenSocket;     
     std::vector<StreamSocket> connectionList;
+    std::vector<int> peerListeningPort;
     std::string hostip;
     int port;
     std::string username;

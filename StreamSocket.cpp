@@ -56,6 +56,7 @@ void StreamSocket::setpeername(const string& name){
 StreamSocket StreamSocket::SSaccept() {
     socklen_t len = sizeof(peeraddr);
     int connfd = accept(fd, (sockaddr*)&peeraddr, &len);
+    // cout << "accepted a connection " << endl;
     return StreamSocket(connfd, peeraddr);
 }
 
@@ -85,11 +86,13 @@ string StreamSocket::getpeerip_P() const{
 
 void StreamSocket::SSsend(const string& mesg){
     send(fd, mesg.c_str(), mesg.size(), 0);
+    // cout << "sent " << endl;
 }
 
 string StreamSocket::SSrecv(){
     char buf[BUFSIZE];
     ssize_t numRead = recv(fd, buf, BUFSIZE, 0);
+    // cout << "received " << endl;
     return string(buf, numRead);
 }
 
@@ -118,10 +121,3 @@ StreamSocket& StreamSocket::operator=(StreamSocket&& other){
     return *this;
 }
 
-int StreamSocket::getpeerport() const{
-    return ntohs(peeraddr.sin_port);
-}
-
-int StreamSocket::getport() const {
-    return port;
-}

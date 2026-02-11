@@ -33,7 +33,7 @@ Chatapp::Chatapp(const int& argc, char* argv[])
 {
     hostip = get_lan_ip();
     // input port
-    if (argc < 2){
+    if (argc < 2 || !is_valid_port(stoi(argv[1]))){
         while (true) {
             cout << "Please input valid port for this application: " << flush;
 
@@ -48,7 +48,7 @@ Chatapp::Chatapp(const int& argc, char* argv[])
             try {
                 int p = stoi(line);
                 if (!is_valid_port(p)) {
-                    cout << "Port must be between 1 and 65535.\n";
+                    cout << "Port must be between 1024 and 65535.\n";
                     continue;
                 }
                 this->port = p;
@@ -112,8 +112,9 @@ void Chatapp::cmdInterface(){
         // new connection
         if (FD_ISSET(listenSocket.getfd(), &readfds)){
             connectionList.emplace_back(listenSocket.SSaccept());
-            connectionList.back().setpeername(connectionList.back().SSrecv()); // to get username
-            connectionList.back().SSsend(username); // send back my username
+            connectionList.back().setpeername(connectionList.back().SSrecv()); 
+            connectionList.back().SSsend(username); 
+            peerListeningPort.emplace_back(stoi(connectionList.back().SSrecv())); 
             cout << "New connection established from " << connectionList.back().getpeername() << endl;
             nfds = MAX(connectionList.back().getfd() + 1, nfds);
         }
@@ -190,14 +191,26 @@ void Chatapp::myport(){
 }
 
 void Chatapp::appConnect(const std::string& remoteip, int remoteport){
-    StreamSocket newSocket{port, hostip};
+    StreamSocket newSocket{};
+    if (remoteip == hostip && remoteport == port){
+        cout << "Cannot connect to myself!" << endl;
+        return;
+    }
+    for (int i = 0; i < connectionList.size(); i++){
+        if (remoteip == connectionList[i].getpeerip_P() && remoteport == peerListeningPort[i]){
+            cout << "Connection was already established!" << endl;
+            return; 
+        }
+    }
     if (newSocket.SSconnect(remoteip, remoteport) == -1){
         cout << "Connection to " << remoteip << " on port " << remoteport << " failed!" << endl;
         return;
     }
     newSocket.SSsend(username);
     newSocket.setpeername(newSocket.SSrecv()); 
+    newSocket.SSsend(to_string(port));
     connectionList.emplace_back(std::move(newSocket));
+    peerListeningPort.emplace_back(remoteport);
 }
 
 void Chatapp::appList() {
@@ -207,20 +220,18 @@ void Chatapp::appList() {
          << setw(16) << "hostname"
          << setw(16) << "IP"
          << setw(10) << "port"
-         << '\n';
+         << endl;
 
     cout << std::string(55, '-') << '\n';
 
-    int connid = 0;
-    for (auto& socket : connectionList) {
-        ++connid;
+    for (int i = 0; i < connectionList.size(); i++) {
         cout << left
-             << setw(8)  << connid
-             << setw(6)  << socket.getfd()
-             << setw(16) << socket.getpeername()
-             << setw(16) << socket.getpeerip_P()
-             << setw(10) << socket.getpeerport()
-             << '\n';
+             << setw(8)  << i + 1
+             << setw(6)  << connectionList[i].getfd()
+             << setw(16) << connectionList[i].getpeername()
+             << setw(16) << connectionList[i].getpeerip_P()
+             << setw(10) << peerListeningPort[i]
+             << endl;
     }
 }
 
@@ -229,7 +240,8 @@ void Chatapp::appTerminate(int connectionID){
         cout << "The connection ID " << connectionID <<" is not identified! Type \"list\" for more information about connetion ID" << endl;
         return;
     }
-    connectionList.erase(connectionList.begin() + connectionID - 1);    
+    connectionList.erase(connectionList.begin() + connectionID - 1);
+    peerListeningPort.erase(peerListeningPort.begin() + connectionID - 1);    
 }
 
 void Chatapp::appSend(int connectionID, std::string& message){

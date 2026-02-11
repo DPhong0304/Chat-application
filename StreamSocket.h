@@ -53,6 +53,4 @@ public:
     std::string getpeername() const;
     std::string getpeerip_P() const;
     void setpeername(const std::string& name);
-    int getport() const;
-    int getpeerport() const;
 };
