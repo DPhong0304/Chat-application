@@ -9,13 +9,23 @@ StreamSocket::StreamSocket()
     fd = socket(domain, type, protocol);
 }
 
-void StreamSocket::SSbind(const string& ipaddr){
+StreamSocket::StreamSocket(int port)
+: StreamSocket{}
+{
+    this->port = port;
+}
+
+int StreamSocket::SSbind(const string& ipaddr){
     memset(&addr, 0, sizeof(Address));
     addr.sin_family = domain;
     inet_pton(domain, ipaddr.c_str(), &(addr.sin_addr));
     addr.sin_port = htons(port);
-    bind(fd, (sockaddr*) &addr, sizeof(Address));
-    cout << "Bound to " << ipaddr << " on port " << port << endl;
+    if (bind(fd, (sockaddr*) &addr, sizeof(Address)) == -1) {
+        perror("bind");
+        return -1;
+    }
+    // cout << "Bound to " << ipaddr << " on port " << port << endl;
+    return 0;
 }
  
 StreamSocket::StreamSocket(int port, const string& ipaddr)
@@ -35,9 +45,6 @@ int StreamSocket::SSconnect(const std::string& ipaddr, int port){
         perror("connect");
         return -1;
     }
-    else{
-        cout << "Connected to " << ipaddr << " on port " << port << endl;
-    }
     return result;
 }
 
@@ -53,13 +60,13 @@ void StreamSocket::setpeername(const string& name){
 StreamSocket StreamSocket::SSaccept() {
     socklen_t len = sizeof(peeraddr);
     int connfd = accept(fd, (sockaddr*)&peeraddr, &len);
-    peername = "??????"; 
-    return StreamSocket(connfd, peeraddr, peername);
+    // cout << "accepted a connection " << endl;
+    return StreamSocket(connfd, peeraddr);
 }
 
 void StreamSocket::SSlisten(int backlog){
     listen(fd, backlog);
-    cout << "Listening on port " << port << endl;
+    // cout << "Listening on port " << port << endl;
 }
 
 StreamSocket::~StreamSocket(){
@@ -81,13 +88,15 @@ string StreamSocket::getpeerip_P() const{
     return string(buf);
 }
 
-void StreamSocket::SSsend(string& mesg){
+void StreamSocket::SSsend(const string& mesg){
     send(fd, mesg.c_str(), mesg.size(), 0);
+    // cout << "sent " << endl;
 }
 
 string StreamSocket::SSrecv(){
     char buf[BUFSIZE];
     ssize_t numRead = recv(fd, buf, BUFSIZE, 0);
+    // cout << "received " << endl;
     return string(buf, numRead);
 }
 
@@ -116,10 +125,3 @@ StreamSocket& StreamSocket::operator=(StreamSocket&& other){
     return *this;
 }
 
-int StreamSocket::getpeerport() const{
-    return ntohs(peeraddr.sin_port);
-}
-
-int StreamSocket::getport() const {
-    return port;
-}

@@ -4,6 +4,7 @@
 #include <limits>
 #include <iomanip>
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
+#define TERMINATEMESG "CMD:TERMINATE"
 
 using namespace std;
 int loop = 0;
@@ -18,11 +19,47 @@ void commandLog(const string& command) {
 }
 
 bool is_valid_port(int port) {
-    return port >= 1 && port <= 65535;
+    if (port < 1024 || port > 65535) return false;
+
+    int fd = socket(AF_INET, SOCK_STREAM, 0);
+    if (fd < 0) return false;
+    sockaddr_in addr{};
+    addr.sin_family = AF_INET;
+    addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    addr.sin_port = htons(port);
+
+    bool ok{bind(fd, (sockaddr*)&addr, sizeof(addr)) == 0};
+
+    close(fd);
+    return ok;
+}
+
+int port_input(){
+    while (true) {
+        cout << "Please input valid port for this application: " << flush;
+        string line;
+        getline(cin, line);
+        if (line.empty()) {
+            cout << "Input cannot be empty.\n";
+            continue;
+        }
+        try {
+            int p = stoi(line);
+            if (!is_valid_port(p)) {
+                cout << "Port must be between 1024 and 65535.\n";
+                continue;
+            }
+            return p;
+        }
+        catch (...) {
+            cout << "Invalid number format.\n";
+        }
+    }
 }
 
 Chatapp::Chatapp(){
     printf("Chat application started!\n");
+    appStatus = RUNNING;
     this->port = -1;
 }
 
@@ -31,31 +68,8 @@ Chatapp::Chatapp(const int& argc, char* argv[])
 {
     hostip = get_lan_ip();
     // input port
-    if (argc < 2){
-        while (true) {
-            cout << "Please input valid port for this application: " << flush;
-
-            string line;
-            getline(cin, line);
-
-            if (line.empty()) {
-                cout << "Input cannot be empty.\n";
-                continue;
-            }
-
-            try {
-                int p = stoi(line);
-                if (!is_valid_port(p)) {
-                    cout << "Port must be between 1 and 65535.\n";
-                    continue;
-                }
-                this->port = p;
-                break;
-            }
-            catch (...) {
-                cout << "Invalid number format.\n";
-            }
-        }
+    if (argc < 2 || !is_valid_port(stoi(argv[1]))){
+        this->port = port_input();
     }
     else{
         this->port = stoi(argv[1]);
@@ -73,15 +87,19 @@ Chatapp::Chatapp(const int& argc, char* argv[])
     listenSocket.SSlisten(SOMAXCONN);
 }
 
-Chatapp::~Chatapp() = default;
+Chatapp::~Chatapp(){
+    for (auto& socket : connectionList){
+        socket.SSsend(TERMINATEMESG);
+    }
+};
 
 void Chatapp::cmdInterface(){
     string command;
     string inMesg;
     fd_set readfds;
-    int readynum, nfds = listenSocket.getfd() + 1;
+    int readynum, nfds = listenSocket.getfd() + 1, connID;
 
-    while (1){
+    while (appStatus == RUNNING){
         cout << username << "@chatapp> " << flush;
 
         // fd set
@@ -106,16 +124,24 @@ void Chatapp::cmdInterface(){
         // new connection
         if (FD_ISSET(listenSocket.getfd(), &readfds)){
             connectionList.emplace_back(listenSocket.SSaccept());
-            connectionList.back().setpeername(connectionList.back().SSrecv()); // to get username
-            connectionList.back().SSsend(username); // send back my username
+            connectionList.back().setpeername(connectionList.back().SSrecv()); 
+            connectionList.back().SSsend(username); 
+            peerListeningPort.emplace_back(stoi(connectionList.back().SSrecv())); 
             cout << "New connection established from " << connectionList.back().getpeername() << endl;
             nfds = MAX(connectionList.back().getfd() + 1, nfds);
         }
 
         // message income
+        connID = 0;
         for (auto& socket : connectionList){
+            connID++;
             if (FD_ISSET(socket.getfd(), &readfds)){
                 inMesg = socket.SSrecv();
+                if (inMesg == TERMINATEMESG){
+                    cout << "Connection from " << socket.getpeername() << " has been terminated." << endl;
+                    appTerminate(connID);
+                    continue;
+                }
                 cout << "From " << socket.getpeername() << ": "<< inMesg <<endl;
             }
         }
@@ -178,36 +204,46 @@ void Chatapp::myport(){
 
 void Chatapp::appConnect(const std::string& remoteip, int remoteport){
     StreamSocket newSocket{};
+    if (remoteip == hostip && remoteport == port){
+        cout << "Cannot connect to myself!" << endl;
+        return;
+    }
+    for (int i = 0; i < connectionList.size(); i++){
+        if (remoteip == connectionList[i].getpeerip_P() && remoteport == peerListeningPort[i]){
+            cout << "Connection was already established!" << endl;
+            return; 
+        }
+    }
     if (newSocket.SSconnect(remoteip, remoteport) == -1){
         cout << "Connection to " << remoteip << " on port " << remoteport << " failed!" << endl;
         return;
     }
     newSocket.SSsend(username);
     newSocket.setpeername(newSocket.SSrecv()); 
+    newSocket.SSsend(to_string(port));
     connectionList.emplace_back(std::move(newSocket));
+    peerListeningPort.emplace_back(remoteport);
 }
 
 void Chatapp::appList() {
     cout << left
-         << setw(8)  << "ConnID"
+         << setw(8)  << "ID"
          << setw(6)  << "fd"
          << setw(16) << "hostname"
-         << setw(16) << "ip"
+         << setw(16) << "IP"
          << setw(10) << "port"
-         << '\n';
+         << endl;
 
-    cout << std::string(46, '-') << '\n';
+    cout << std::string(55, '-') << '\n';
 
-    int connid = 0;
-    for (auto& socket : connectionList) {
-        ++connid;
+    for (int i = 0; i < connectionList.size(); i++) {
         cout << left
-             << setw(8)  << connid
-             << setw(6)  << socket.getfd()
-             << setw(16) << socket.getpeername()
-             << setw(16) << socket.getpeerip_P()
-             << setw(10) << socket.getpeerport()
-             << '\n';
+             << setw(8)  << i + 1
+             << setw(6)  << connectionList[i].getfd()
+             << setw(16) << connectionList[i].getpeername()
+             << setw(16) << connectionList[i].getpeerip_P()
+             << setw(10) << peerListeningPort[i]
+             << endl;
     }
 }
 
@@ -216,7 +252,8 @@ void Chatapp::appTerminate(int connectionID){
         cout << "The connection ID " << connectionID <<" is not identified! Type \"list\" for more information about connetion ID" << endl;
         return;
     }
-    connectionList.erase(connectionList.begin() + connectionID - 1);    
+    connectionList.erase(connectionList.begin() + connectionID - 1);
+    peerListeningPort.erase(peerListeningPort.begin() + connectionID - 1);    
 }
 
 void Chatapp::appSend(int connectionID, std::string& message){
@@ -230,7 +267,7 @@ void Chatapp::appSend(int connectionID, std::string& message){
 void Chatapp::appExit(){
     cout << "Exiting chat application..." << endl;
     cout.flush();
-    std::exit(0);
+    appStatus = STOP;
 }
 
 vector<string> split(const string& s) {
