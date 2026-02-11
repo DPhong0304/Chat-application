@@ -190,7 +190,7 @@ void Chatapp::myport(){
 }
 
 void Chatapp::appConnect(const std::string& remoteip, int remoteport){
-    StreamSocket newSocket{port};
+    StreamSocket newSocket{port, hostip};
     if (newSocket.SSconnect(remoteip, remoteport) == -1){
         cout << "Connection to " << remoteip << " on port " << remoteport << " failed!" << endl;
         return;
