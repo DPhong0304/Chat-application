@@ -11,6 +11,9 @@
 
 int commandHandler(std::string& command, class Chatapp& app);
 std::string get_lan_ip();
+bool is_valid_port(int port);
+int port_input();
+std::vector<std::string> split(const std::string& s);
 std::string messageProcessing(const std::string& command, size_t startIndex); 
 
 enum status_t{

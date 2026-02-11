@@ -15,13 +15,17 @@ StreamSocket::StreamSocket(int port)
     this->port = port;
 }
 
-void StreamSocket::SSbind(const string& ipaddr){
+int StreamSocket::SSbind(const string& ipaddr){
     memset(&addr, 0, sizeof(Address));
     addr.sin_family = domain;
     inet_pton(domain, ipaddr.c_str(), &(addr.sin_addr));
     addr.sin_port = htons(port);
-    bind(fd, (sockaddr*) &addr, sizeof(Address));
+    if (bind(fd, (sockaddr*) &addr, sizeof(Address)) == -1) {
+        perror("bind");
+        return -1;
+    }
     // cout << "Bound to " << ipaddr << " on port " << port << endl;
+    return 0;
 }
  
 StreamSocket::StreamSocket(int port, const string& ipaddr)

@@ -19,7 +19,42 @@ void commandLog(const string& command) {
 }
 
 bool is_valid_port(int port) {
-    return port >= 1024 && port <= 65535;
+    if (port < 1024 || port > 65535) return false;
+
+    int fd = socket(AF_INET, SOCK_STREAM, 0);
+    if (fd < 0) return false;
+    sockaddr_in addr{};
+    addr.sin_family = AF_INET;
+    addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    addr.sin_port = htons(port);
+
+    bool ok{bind(fd, (sockaddr*)&addr, sizeof(addr)) == 0};
+
+    close(fd);
+    return ok;
+}
+
+int port_input(){
+    while (true) {
+        cout << "Please input valid port for this application: " << flush;
+        string line;
+        getline(cin, line);
+        if (line.empty()) {
+            cout << "Input cannot be empty.\n";
+            continue;
+        }
+        try {
+            int p = stoi(line);
+            if (!is_valid_port(p)) {
+                cout << "Port must be between 1024 and 65535.\n";
+                continue;
+            }
+            return p;
+        }
+        catch (...) {
+            cout << "Invalid number format.\n";
+        }
+    }
 }
 
 Chatapp::Chatapp(){
@@ -34,30 +69,7 @@ Chatapp::Chatapp(const int& argc, char* argv[])
     hostip = get_lan_ip();
     // input port
     if (argc < 2 || !is_valid_port(stoi(argv[1]))){
-        while (true) {
-            cout << "Please input valid port for this application: " << flush;
-
-            string line;
-            getline(cin, line);
-
-            if (line.empty()) {
-                cout << "Input cannot be empty.\n";
-                continue;
-            }
-
-            try {
-                int p = stoi(line);
-                if (!is_valid_port(p)) {
-                    cout << "Port must be between 1024 and 65535.\n";
-                    continue;
-                }
-                this->port = p;
-                break;
-            }
-            catch (...) {
-                cout << "Invalid number format.\n";
-            }
-        }
+        this->port = port_input();
     }
     else{
         this->port = stoi(argv[1]);
