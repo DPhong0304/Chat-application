@@ -4,6 +4,7 @@
 #include <limits>
 #include <iomanip>
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
+#define TERMINATEMESG "CMD:TERMINATE"
 
 using namespace std;
 int loop = 0;
@@ -23,6 +24,7 @@ bool is_valid_port(int port) {
 
 Chatapp::Chatapp(){
     printf("Chat application started!\n");
+    appStatus = RUNNING;
     this->port = -1;
 }
 
@@ -73,15 +75,19 @@ Chatapp::Chatapp(const int& argc, char* argv[])
     listenSocket.SSlisten(SOMAXCONN);
 }
 
-Chatapp::~Chatapp() = default;
+Chatapp::~Chatapp(){
+    for (auto& socket : connectionList){
+        socket.SSsend(TERMINATEMESG);
+    }
+};
 
 void Chatapp::cmdInterface(){
     string command;
     string inMesg;
     fd_set readfds;
-    int readynum, nfds = listenSocket.getfd() + 1;
+    int readynum, nfds = listenSocket.getfd() + 1, connID;
 
-    while (1){
+    while (appStatus == RUNNING){
         cout << username << "@chatapp> " << flush;
 
         // fd set
@@ -113,9 +119,16 @@ void Chatapp::cmdInterface(){
         }
 
         // message income
+        connID = 0;
         for (auto& socket : connectionList){
+            connID++;
             if (FD_ISSET(socket.getfd(), &readfds)){
                 inMesg = socket.SSrecv();
+                if (inMesg == TERMINATEMESG){
+                    cout << "Connection from " << socket.getpeername() << " has been terminated." << endl;
+                    appTerminate(connID);
+                    continue;
+                }
                 cout << "From " << socket.getpeername() << ": "<< inMesg <<endl;
             }
         }
@@ -189,14 +202,14 @@ void Chatapp::appConnect(const std::string& remoteip, int remoteport){
 
 void Chatapp::appList() {
     cout << left
-         << setw(8)  << "ConnID"
+         << setw(8)  << "ID"
          << setw(6)  << "fd"
          << setw(16) << "hostname"
-         << setw(16) << "ip"
+         << setw(16) << "IP"
          << setw(10) << "port"
          << '\n';
 
-    cout << std::string(46, '-') << '\n';
+    cout << std::string(55, '-') << '\n';
 
     int connid = 0;
     for (auto& socket : connectionList) {
@@ -230,7 +243,7 @@ void Chatapp::appSend(int connectionID, std::string& message){
 void Chatapp::appExit(){
     cout << "Exiting chat application..." << endl;
     cout.flush();
-    std::exit(0);
+    appStatus = STOP;
 }
 
 vector<string> split(const string& s) {

@@ -35,9 +35,6 @@ int StreamSocket::SSconnect(const std::string& ipaddr, int port){
         perror("connect");
         return -1;
     }
-    else{
-        cout << "Connected to " << ipaddr << " on port " << port << endl;
-    }
     return result;
 }
 
@@ -53,8 +50,7 @@ void StreamSocket::setpeername(const string& name){
 StreamSocket StreamSocket::SSaccept() {
     socklen_t len = sizeof(peeraddr);
     int connfd = accept(fd, (sockaddr*)&peeraddr, &len);
-    peername = "??????"; 
-    return StreamSocket(connfd, peeraddr, peername);
+    return StreamSocket(connfd, peeraddr);
 }
 
 void StreamSocket::SSlisten(int backlog){
@@ -81,7 +77,7 @@ string StreamSocket::getpeerip_P() const{
     return string(buf);
 }
 
-void StreamSocket::SSsend(string& mesg){
+void StreamSocket::SSsend(const string& mesg){
     send(fd, mesg.c_str(), mesg.size(), 0);
 }
 

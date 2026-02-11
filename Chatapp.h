@@ -11,7 +11,12 @@
 
 int commandHandler(std::string& command, class Chatapp& app);
 std::string get_lan_ip();
-std::string messageProcessing(const std::string& command, size_t startIndex);    
+std::string messageProcessing(const std::string& command, size_t startIndex); 
+
+enum status_t{
+    RUNNING,
+    STOP,
+};
 
 class Chatapp {
 private:
@@ -21,6 +26,7 @@ private:
     int port;
     std::string username;
     Chatapp();
+    status_t appStatus;
 
 public:
     Chatapp(const int& argc, char* argv[]); 

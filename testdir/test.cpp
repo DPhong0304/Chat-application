@@ -1,4 +1,5 @@
 #include "../StreamSocket.h"
+#include "../Chatapp.h"
 #include <iostream>
 
 using namespace std;
@@ -6,8 +7,9 @@ using namespace std;
 
 int main(){
     StreamSocket newsocket{};
-    newsocket.SSconnect("192.168.1.18", 1234);
-    string mesg = "hello from client";
+    string ip = get_lan_ip();
+    newsocket.SSconnect(ip, 1234);
+    string mesg = "test_client";
     newsocket.SSsend(mesg);   
     while (true) {
         cout << "input your message: " << flush;
