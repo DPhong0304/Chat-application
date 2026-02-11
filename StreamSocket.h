@@ -31,6 +31,7 @@ private:
 
 public:
     StreamSocket();
+    StreamSocket(int port);
     StreamSocket(int port, const std::string& ipaddr);
     StreamSocket(int fd, Address peeraddr, const std::string& peername = "???????");// for accept
     ~StreamSocket();

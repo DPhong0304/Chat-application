@@ -9,13 +9,19 @@ StreamSocket::StreamSocket()
     fd = socket(domain, type, protocol);
 }
 
+StreamSocket::StreamSocket(int port)
+: StreamSocket{}
+{
+    this->port = port;
+}
+
 void StreamSocket::SSbind(const string& ipaddr){
     memset(&addr, 0, sizeof(Address));
     addr.sin_family = domain;
     inet_pton(domain, ipaddr.c_str(), &(addr.sin_addr));
     addr.sin_port = htons(port);
     bind(fd, (sockaddr*) &addr, sizeof(Address));
-    cout << "Bound to " << ipaddr << " on port " << port << endl;
+    // cout << "Bound to " << ipaddr << " on port " << port << endl;
 }
  
 StreamSocket::StreamSocket(int port, const string& ipaddr)
@@ -55,7 +61,7 @@ StreamSocket StreamSocket::SSaccept() {
 
 void StreamSocket::SSlisten(int backlog){
     listen(fd, backlog);
-    cout << "Listening on port " << port << endl;
+    // cout << "Listening on port " << port << endl;
 }
 
 StreamSocket::~StreamSocket(){

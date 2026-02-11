@@ -19,7 +19,7 @@ void commandLog(const string& command) {
 }
 
 bool is_valid_port(int port) {
-    return port >= 1 && port <= 65535;
+    return port >= 1024 && port <= 65535;
 }
 
 Chatapp::Chatapp(){
@@ -190,7 +190,7 @@ void Chatapp::myport(){
 }
 
 void Chatapp::appConnect(const std::string& remoteip, int remoteport){
-    StreamSocket newSocket{};
+    StreamSocket newSocket{port};
     if (newSocket.SSconnect(remoteip, remoteport) == -1){
         cout << "Connection to " << remoteip << " on port " << remoteport << " failed!" << endl;
         return;
