@@ -45,7 +45,7 @@ public:
     StreamSocket& operator=(StreamSocket&& other); 
     int SSconnect(const std::string& ip, int port);
     void SSlisten(int backlog);
-    void SSbind(const std::string& ipaddr);
+    int SSbind(const std::string& ipaddr);
     StreamSocket SSaccept();
     void SSsend(const std::string& mesg);
     std::string SSrecv();
