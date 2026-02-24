@@ -1,11 +1,12 @@
 # Chat-application
 ## Description:
-This project is a command-based chat application that facilitate communication between hosts in the same LAN.
+This project is a peer-to-peer command-based chat application that facilitates communication between multiple hosts in the same LAN.  
 
 ---
 
 ## Features
 - Command-line interface (interactive)
+- Built-in `help` command to display available commands and usage information
 - Listen on a chosen port
 - Connect to another host using IP + port
 - Maintain multiple active connections
@@ -16,7 +17,7 @@ This project is a command-based chat application that facilitate communication b
 ---
 
 ## Requirements
-- Linux (recommended: Ubuntu)
+- Linux 
 - C++ compiler (e.g., `g++`)
 - `make`
 
